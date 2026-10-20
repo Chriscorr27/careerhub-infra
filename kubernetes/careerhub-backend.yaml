@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: chris2708/careerhub-backend:latest
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          env:
+            - name: MYSQL_URL
+              value: jdbc:mysql://mysqldb:3306/career_hub
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: sql_username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: sql_password
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: mongodb_url
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: redis_password
+            - name: REDIS_TIMEOUT
+              value: "2s"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka-service:9092
+            - name: KAFKA_CONSUMER_GROUP
+              value: careerhub
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: jwt_secret
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_region
+            - name: AWS_S3_FILES_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_s3_files_bucket
+            - name: AWS_S3_WATERMARK_FILES_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_s3_watermark_files_bucket
+            - name: AWS_S3_PROFILES_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_s3_profiles_bucket
+            - name: AWS_CLOUD_FRONT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_cloud_front_url
+            - name: AWS_SES_FROM_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_ses_from_email
+            - name: ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: admin_email
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: admin_password
+            - name: AWS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_secret
+            - name: AWS_HASHING_ALGORITHM
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_hashing_algorithm
+            - name: AWS_PROFILE
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret
+                  key: aws_profile
+          volumeMounts:
+            - name: aws-credentials
+              mountPath: /root/.aws
+              readOnly: true
+      volumes:
+        - name: aws-credentials
+          hostPath:
+            path: /host/.aws
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: backend

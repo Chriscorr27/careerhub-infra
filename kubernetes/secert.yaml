@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+type: Opaque
+data:
+  sql_username: cm9vdA==
+  sql_password: Q2hyaXM=
+  mongodb_username: cm9vdA==
+  mongodb_password: Q2hyaXM=
+  kafka_cluster_id: TWtVM09FVkJOVGN3TlRKRU5ETTJRaw==
+  redis_password: Q2hyaXM=
+  mongodb_url: bW9uZ29kYjovL3Jvb3Q6Q2hyaXNAbW9uZ29kYjoyNzAxNy9jYXJlZXJfaHViP2F1dGhTb3VyY2U9YWRtaW4mdXVpZFJlcHJlc2VudGF0aW9uPVNUQU5EQVJE
+  jwt_secret: NzhBYWlCbXFJejQ1YnNYbmdJNlB6blBkSmdZb3Y3OFk=
+  aws_region: YXAtc291dGgtMQ==
+  aws_s3_files_bucket: Y2hyaW9uLWNhcmVlcmh1Yi1maWxlcw==
+  aws_s3_watermark_files_bucket: Y2hyaW9uLWNhcmVlcmh1Yi13YXRlcm1hcmstZmlsZXM=
+  aws_s3_profiles_bucket: Y2hyaW9uLWNhcmVlcmh1Yi1wcm9maWxlcw==
+  aws_cloud_front_url: aHR0cHM6Ly9kM3NidDg1c2J4YWV4ay5jbG91ZGZyb250Lm5ldC8=
+  aws_ses_from_email: Y2hyaXNjb3JyZWlhMjAwMWF3c0BnbWFpbC5jb20=
+  admin_email: YWRtaW5AZ21haWwuY29t
+  admin_password: YWRtaW4=
+  aws_secret: dypjbG00TjxvZ249UiFzWA==
+  aws_hashing_algorithm: SG1hY1NIQTI1Ng==
+  aws_profile: ZGVmYXVsdA==
+  grafana_username: cm9vdA==
+  grafana_password: Q2hyaXM=
