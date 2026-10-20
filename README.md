@@ -12,6 +12,7 @@ This directory contains the deployment and supporting infrastructure for CareerH
 | `secerts/backend.env.template` | Environment-variable template for local Compose setup |
 | `AWS/docker-ecr.bash` | Example Docker image login, tag, and push commands for Amazon ECR |
 | `AWS/create-lamda-python-layer.bash` | Builds and publishes a Python dependency layer for AWS Lambda |
+| `AWS/lambda/` | Lambda handlers for upload notification, image resizing, and PDF watermarking |
 | `grafana/grafana-dashboard.json` | Grafana dashboard definition |
 | `documents/` | Supporting project diagrams |
 
@@ -67,9 +68,27 @@ kubectl apply -f kubernetes/careerhub-backend.yaml
 
 Apply `kafka-ui.yaml`, `prometheus-config.yaml`, `prometheus.yaml`, and `grafana.yaml` as needed. The manifests are starting points: validate cluster-specific storage, credentials, networking, and resource requirements before deployment.
 
+## AWS Lambda functions
+
+The Python handlers are under `AWS/lambda/`:
+
+| Function | Handler file | Purpose and integration |
+| --- | --- | --- |
+| Upload notification | `notifiy-backend/lambda_function.py` | Accepts an API Gateway-style request containing an S3 upload event, authenticates to the backend, signs the upload details with HMAC-SHA256, and sends a `PATCH` request to `/api/v1/files/file-uploaded`. |
+| Image resizing | `resize-image/lambda_function.py` | Reads an image from S3 and returns it as a base64-encoded HTTP response. It takes the object key from `rawPath` and an optional target width from the `w` query parameter. |
+| PDF watermarking | ` after-s3-file-uploaded/lamdba_function.py` | Handles S3 object-created events for PDF or TXT files, watermarks the document, and uploads the resulting PDF to a destination bucket. The supporting `process_pdf.py` contains the PDF conversion and watermark logic. |
+
+Configure the relevant integrations when creating the functions:
+
+- **Upload notification:** provide `API_BASE_URL`, `AWS_EMAIL`, `AWS_PASSWORD`, and `AWS_SECRET`. The invocation event must include `timestamp`, `requestContext.requestId`, and `requestPayload.Records[0].s3.object.key`. Protect these credentials with Lambda environment encryption or a secrets manager. The Lambda role needs permission to write logs; its backend access must be limited to the required route.
+- **Image resizing:** provide `SOURCE_BUCKET` or use the handler's default. Configure an HTTP integration that forwards the requested path and query parameters, and grant the execution role `s3:GetObject` access to the source bucket. The handler imports Pillow (`PIL`), so deploy a compatible Pillow package or Lambda layer for the selected runtime and architecture.
+- **PDF watermarking:** optionally provide `DESTINATION_BUCKET` and `WATERMARK_TEXT` or use the handler defaults. Configure an S3 object-created notification on the source bucket and grant the role read access to source objects and write access to destination objects. Attach a compatible layer containing `pypdf` and `reportlab`; `AWS/create-lamda-python-layer.bash` is an example layer publishing script. Restrict the trigger to supported input suffixes or prefixes and keep the destination bucket outside the trigger scope to prevent recursive invocations. The function uses `/tmp` for intermediate files; set sufficient Lambda temporary storage and timeout for expected PDF sizes.
+
+Select a supported Python runtime and architecture, then package and configure each handler and its dependencies for that target. Validate event shapes, IAM permissions, bucket names, API Gateway binary response settings, and resource limits in the AWS environment before enabling production triggers.
+
 ## AWS helper scripts
 
-The scripts in `AWS/` are operational examples and require the AWS CLI, Docker (for ECR operations), and valid AWS credentials. Review and update account, region, image, and layer settings for your AWS environment before running them. Run the Lambda layer script from a dedicated working directory because it creates and removes local build artifacts there.
+The scripts in `AWS/` are operational examples and require the AWS CLI, Docker (for ECR operations), and valid AWS credentials. Review and update account, region, image, and layer settings for your AWS environment before running them. Run the Lambda layer script only from a dedicated, disposable working directory: it removes and recreates a local `python/` directory and `lambda_layer.zip` before publishing the layer. Its current settings target Python 3.14 on x86_64; ensure that runtime is supported by the target Lambda environment or adjust the script's runtime, Python version, and architecture together.
 
 ## Observability
 
